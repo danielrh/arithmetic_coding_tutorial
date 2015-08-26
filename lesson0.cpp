@@ -23,7 +23,7 @@
 
   Note that the algorithm will always produce correct results:
   The ZERO data with incorrect probability example shows the calamity that happens
-  When the wrong probability is guessed for a stream. The result is simpy 10x bigger
+  When the wrong probability is guessed for a stream. The result is simpy 7x bigger
   The data is still recoverable, just extra disk space was wasted
 
   Likewise you can see when the probability is guessed exactly, the compression factor is 100:1 here

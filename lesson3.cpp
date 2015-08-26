@@ -11,7 +11,7 @@
 //// Lesson 3 - Numeric Encodings
 /////////////////
 /*
-  This lesson illustrates that a righer set of probabilities can be used to better describe a number
+  This lesson illustrates that a richer set of probabilities can be used to better describe a number
   If we track which bit we're encoding and all the previously observed bits for the number so far
   We can rapidly hone in on which number is being encoded currently and throw out numbers
   That might not be high probability outcomes for a particular coder state
@@ -39,7 +39,8 @@ void encode_with_adaptive_probability() {
     for (size_t i = 0; i < sizeof(uncompressed); ++i) {
         uint8_t encoded_so_far = 0; // <-- this is the number encoded so far (in reverse order), as a prior for the rest
         for(int bit = 0; bit < 8; ++bit) {
-            bool cur_bit = !!(uncompressed[i] & (1 << (7 - bit)));
+            unsigned char bit_within_byte = (1 << (7 - bit));
+            bool cur_bit = !!(uncompressed[i] & bit_within_byte);
             vpx_write(&wri, cur_bit, encode[encoded_so_far + (1 << bit)].prob);
             encode[encoded_so_far + (1 << bit)].record_bit(cur_bit);
             if (cur_bit) {
@@ -61,7 +62,8 @@ void encode_with_adaptive_probability() {
         uint8_t decoded_so_far = 0; // <-- this is the number decoded so far, as a prior for the rest
         for(int bit = 0; bit < 8; ++bit) {
             if (vpx_read(&rea, decode[decoded_so_far + (1 << bit)].prob)) {
-                roundtrip[i] |= (1 << (7 - bit));
+                unsigned char bit_within_byte = (1 << (7 - bit));
+                roundtrip[i] |= bit_within_byte;
                 decode[decoded_so_far + (1 << bit)].record_bit(true);
                 decoded_so_far |= (1 << bit); // <-- this is the number decoded so far, as a prior for the rest
             } else {
