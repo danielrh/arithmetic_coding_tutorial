@@ -37,15 +37,15 @@ void encode_with_adaptive_probability() {
     memcpy(tmp, uncompressed, sizeof(uncompressed));
     (*transform)(tmp);
 
-    DynProb encode[8];// one probability per bit position
+    DynProb encode[8];// one probability per bit position <-- new for lesson2
     vpx_writer wri ={0};
     vpx_start_encode(&wri, compressed);
     for (size_t i = 0; i < sizeof(uncompressed); ++i) {
         int bit_index = 0;
         for(int bit = 1; bit < 256; ++bit_index, bit <<= 1) {
             bool cur_bit = !!(uncompressed[i] & bit);
-            vpx_write(&wri, cur_bit, encode[bit_index].prob);
-            encode[bit_index].record_bit(cur_bit);
+            vpx_write(&wri, cur_bit, encode[bit_index].prob); // <-- bit_index is new for lesson2
+            encode[bit_index].record_bit(cur_bit); // <-- bit_index is new for lesson2
         }
     }
     vpx_stop_encode(&wri);
@@ -69,11 +69,11 @@ void encode_with_adaptive_probability() {
     for (size_t i = 0; i < sizeof(roundtrip); ++i) {
         int bit_index = 0;
         for(int bit = 1; bit < 256; ++bit_index, bit <<= 1) {
-            if (vpx_read(&rea, decode[bit_index].prob)) {
+            if (vpx_read(&rea, decode[bit_index].prob)) { // <-- bit_index is new for lesson2
                 roundtrip[i] |= bit;
-                decode[bit_index].record_bit(true);
+                decode[bit_index].record_bit(true); // <-- bit_index is new for lesson2
             } else {
-                decode[bit_index].record_bit(false);
+                decode[bit_index].record_bit(false); // <-- bit_index is new for lesson2
             }
         }
     }

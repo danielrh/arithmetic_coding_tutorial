@@ -56,7 +56,7 @@ void (*untransform)(unsigned char* tmp) = nop;
 unsigned char tmp[sizeof(uncompressed)];
 void encode_with_adaptive_probability() {
     memcpy(tmp, uncompressed, sizeof(uncompressed));
-    (*transform)(tmp);
+    (*transform)(tmp); // this currently is a no-op but it may be helpful for the EXERCISE
     DynProb encode;
     vpx_writer wri ={0};
     vpx_start_encode(&wri, tmp);
@@ -64,7 +64,7 @@ void encode_with_adaptive_probability() {
         for(int bit = 1; bit < 256; bit <<= 1) {
             bool cur_bit = !!(tmp[i] & bit);
             vpx_write(&wri, cur_bit, encode.prob);
-            encode.record_bit(cur_bit);
+            encode.record_bit(cur_bit); // <-- this a new line for lesson1 that lets the encoder adapt to data
         }
     }
     vpx_stop_encode(&wri);
@@ -82,14 +82,14 @@ void encode_with_adaptive_probability() {
         for(int bit = 1; bit < 256; bit <<= 1) {
             if (vpx_read(&rea, decode.prob)) {
                 roundtrip[i] |= bit;
-                decode.record_bit(true);
+                decode.record_bit(true); // <-- this a new line for lesson1
             } else {
-                decode.record_bit(false);
+                decode.record_bit(false); // <-- this a new line for lesson1
             }
         }
     }
     assert(vpx_reader_has_error(&rea) == 0);
-    (*untransform)(uncompressed);
+    (*untransform)(uncompressed); // this is, again a no-op, but may be helpful for the EXERCISE
     assert(memcmp(uncompressed, roundtrip, sizeof(uncompressed)) == 0);
 }
 

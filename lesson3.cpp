@@ -33,37 +33,39 @@
 
 
 void encode_with_adaptive_probability() {
-    DynProb encode[256];// one probability per number encoded so far and bit position
+    DynProb encode[256];// one probability per number encoded so far per bit position--the 0th position is unused
     vpx_writer wri ={0};
     vpx_start_encode(&wri, compressed);
     for (size_t i = 0; i < sizeof(uncompressed); ++i) {
-        uint8_t encoded_so_far = 0;
-        for(int bit = 128; bit > 0; bit >>= 1) {
-            bool cur_bit = !!(uncompressed[i] & bit);
-            vpx_write(&wri, cur_bit, encode[encoded_so_far + bit].prob);
-            encode[encoded_so_far + bit].record_bit(cur_bit);
-            encoded_so_far |= uncompressed[i] & bit;
+        uint8_t encoded_so_far = 0; // <-- this is the number encoded so far (in reverse order), as a prior for the rest
+        for(int bit = 0; bit < 8; ++bit) {
+            bool cur_bit = !!(uncompressed[i] & (1 << (7 - bit)));
+            vpx_write(&wri, cur_bit, encode[encoded_so_far + (1 << bit)].prob);
+            encode[encoded_so_far + (1 << bit)].record_bit(cur_bit);
+            if (cur_bit) {
+                encoded_so_far |= (1 << bit); // <-- this is the number encoded so far, as a prior for the rest
+            }
         }
     }
     vpx_stop_encode(&wri);
     printf("Buffer encoded dynamically results in %d size (%.2f%%)\n",
            wri.pos,
            100 * wri.pos / float(sizeof(uncompressed)));
-    DynProb decode[256];
+    DynProb decode[256]; // probability per number encoded so far per bit position
     vpx_reader rea={0};
     vpx_reader_init(&rea,
                     wri.buffer,
                     wri.pos);
     memset(roundtrip, 0, sizeof(roundtrip));
     for (size_t i = 0; i < sizeof(roundtrip); ++i) {
-        uint8_t decoded_so_far = 0;
-        for(int bit = 128; bit > 0; bit >>= 1) {
-            if (vpx_read(&rea, decode[decoded_so_far + bit].prob)) {
-                roundtrip[i] |= bit;
-                decode[decoded_so_far + bit].record_bit(true);
-                decoded_so_far |= bit;
+        uint8_t decoded_so_far = 0; // <-- this is the number decoded so far, as a prior for the rest
+        for(int bit = 0; bit < 8; ++bit) {
+            if (vpx_read(&rea, decode[decoded_so_far + (1 << bit)].prob)) {
+                roundtrip[i] |= (1 << (7 - bit));
+                decode[decoded_so_far + (1 << bit)].record_bit(true);
+                decoded_so_far |= (1 << bit); // <-- this is the number decoded so far, as a prior for the rest
             } else {
-                decode[decoded_so_far + bit].record_bit(false);
+                decode[decoded_so_far + (1 << bit)].record_bit(false);
             }
         }
     }

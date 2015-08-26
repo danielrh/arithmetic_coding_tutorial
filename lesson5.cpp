@@ -69,12 +69,14 @@ void encode_with_adaptive_probability() {
     vpx_writer wri ={0};
     vpx_start_encode(&wri, compressed);
     for (size_t i = 0; i < sizeof(uncompressed); ++i) {
-        uint8_t encoded_so_far = 0;
-        for(int bit = 128; bit > 0; bit >>= 1) {
-            bool cur_bit = !!(uncompressed[i] & bit);
-            vpx_write(&wri, cur_bit, encode[i % 2][i % 3 ==0][i % 5 == 0][encoded_so_far + bit].prob);
-            encode[i % 2][i % 3 ==0][i % 5 == 0][encoded_so_far + bit].record_bit_and_rescale(cur_bit);
-            encoded_so_far |= uncompressed[i] & bit;
+        uint8_t encoded_so_far = 0; // <-- this is the number encoded so far (in reverse order), as a prior for the rest
+        for(int bit = 0; bit < 8; ++bit) {
+            bool cur_bit = !!(uncompressed[i] & (1 << (7 - bit)));
+            vpx_write(&wri, cur_bit, encode[i % 2][i % 3 ==0][i % 5 == 0][encoded_so_far + (1 << bit)].prob);
+            encode[i % 2][i % 3 ==0][i % 5 == 0][encoded_so_far + (1 << bit)].record_bit(cur_bit);
+            if (cur_bit) {
+                encoded_so_far |= (1 << bit); // <-- this is the number encoded so far, as a prior for the rest
+            }
         }
     }
     vpx_stop_encode(&wri);
@@ -88,14 +90,14 @@ void encode_with_adaptive_probability() {
                     wri.pos);
     memset(roundtrip, 0, sizeof(roundtrip));
     for (size_t i = 0; i < sizeof(roundtrip); ++i) {
-        uint8_t decoded_so_far = 0;
-        for(int bit = 128; bit > 0; bit >>= 1) {
-            if (vpx_read(&rea, decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + bit].prob)) {
-                roundtrip[i] |= bit;
-                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + bit].record_bit_and_rescale(true);
-                decoded_so_far |= bit;
+        uint8_t decoded_so_far = 0; // <-- this is the number decoded so far, as a prior for the rest
+        for(int bit = 0; bit < 8; ++bit) {
+            if (vpx_read(&rea, decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].prob)) {
+                roundtrip[i] |= (1 << (7 - bit));
+                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].record_bit(true);
+                decoded_so_far |= (1 << bit); // <-- this is the number decoded so far, as a prior for the rest
             } else {
-                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + bit].record_bit_and_rescale(false);
+                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].record_bit(false);
             }
         }
     }

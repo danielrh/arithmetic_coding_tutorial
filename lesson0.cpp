@@ -17,6 +17,10 @@
   Respectively.  If you are sure that the next bit will be zero, you want to set the probability
   Of a zero very high, so that the weight will favor zeros over ones.
 
+  An article going in depth on how an arithmetic coder is implemented is here
+  http://www.drdobbs.com/cpp/data-compression-with-arithmetic-encodin/240169251
+  But for simplicity, we'll treat the VP8 bool_decoder as a black box.
+
   Note that the algorithm will always produce correct results:
   The ZERO data with incorrect probability example shows the calamity that happens
   When the wrong probability is guessed for a stream. The result is simpy 10x bigger
