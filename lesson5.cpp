@@ -73,7 +73,7 @@ void encode_with_adaptive_probability() {
         for(int bit = 0; bit < 8; ++bit) {
             bool cur_bit = !!(uncompressed[i] & (1 << (7 - bit)));
             vpx_write(&wri, cur_bit, encode[i % 2][i % 3 ==0][i % 5 == 0][encoded_so_far + (1 << bit)].prob);
-            encode[i % 2][i % 3 ==0][i % 5 == 0][encoded_so_far + (1 << bit)].record_bit(cur_bit);
+            encode[i % 2][i % 3 ==0][i % 5 == 0][encoded_so_far + (1 << bit)].record_bit_and_rescale(cur_bit);
             if (cur_bit) {
                 encoded_so_far |= (1 << bit); // <-- this is the number encoded so far, as a prior for the rest
             }
@@ -94,10 +94,10 @@ void encode_with_adaptive_probability() {
         for(int bit = 0; bit < 8; ++bit) {
             if (vpx_read(&rea, decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].prob)) {
                 roundtrip[i] |= (1 << (7 - bit));
-                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].record_bit(true);
+                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].record_bit_and_rescale(true);
                 decoded_so_far |= (1 << bit); // <-- this is the number decoded so far, as a prior for the rest
             } else {
-                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].record_bit(false);
+                decode[i % 2][i % 3 ==0][i % 5 == 0][decoded_so_far + (1 << bit)].record_bit_and_rescale(false);
             }
         }
     }
